@@ -1,0 +1,18 @@
+# Build outputs (ignore in all modules)
+**/build/
+**/target/
+**/bin/
+**/.gradle/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
