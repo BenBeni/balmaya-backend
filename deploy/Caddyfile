@@ -1,11 +1,11 @@
 # Replace with real domains before production deploy.
-http://91.99.56.58 {
+http://89.167.95.134 {
     encode zstd gzip
     reverse_proxy app:8081
 }
 
 # Optional: expose Keycloak admin and OIDC endpoints via HTTPS if required.
-http://91.99.56.58:8080 {
+http://89.167.95.134:8080 {
     encode zstd gzip
     reverse_proxy keycloak:8080
 }

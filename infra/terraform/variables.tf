@@ -4,39 +4,22 @@ variable "hcloud_token" {
   sensitive   = true
 }
 
-variable "ssh_public_key" {
-  description = "Public SSH key content for server access"
+variable "existing_server_name" {
+  description = "Name of the already-existing Hetzner server"
   type        = string
+  default     = "ubuntu-8gb-hel1-2"
 }
 
-variable "ssh_key_name" {
-  description = "Name of the SSH key in Hetzner"
+variable "ssh_user" {
+  description = "SSH user used for deployments"
   type        = string
-  default     = "balmaya-deploy-key"
-}
-
-variable "server_name" {
-  description = "VM name"
-  type        = string
-  default     = "balmaya-prod-1"
-}
-
-variable "server_type" {
-  description = "Hetzner server type. cx31 gives >= 4GB RAM."
-  type        = string
-  default     = "cx33"
+  default     = "app"
 }
 
 variable "location" {
-  description = "Hetzner location"
+  description = "Location for optional volume (must match existing server location)"
   type        = string
-  default     = "nbg1"
-}
-
-variable "image" {
-  description = "Base server image"
-  type        = string
-  default     = "ubuntu-22.04"
+  default     = "hel1"
 }
 
 variable "enable_data_volume" {

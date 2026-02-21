@@ -1,17 +1,5 @@
-locals {
-  cloud_init = templatefile("${path.module}/cloud-init.yaml.tftpl", {
-    enable_data_volume = var.enable_data_volume
-  })
-}
-
-resource "hcloud_ssh_key" "deploy" {
-  name       = var.ssh_key_name
-  public_key = var.ssh_public_key
-  labels     = var.labels
-}
-
 resource "hcloud_firewall" "prod" {
-  name   = "${var.server_name}-fw"
+  name   = "${var.existing_server_name}-fw"
   labels = var.labels
 
   rule {
@@ -51,28 +39,17 @@ resource "hcloud_firewall" "prod" {
   }
 
   apply_to {
-    server = hcloud_server.prod.id
+    server = data.hcloud_server.existing.id
   }
 }
 
-resource "hcloud_server" "prod" {
-  name        = var.server_name
-  server_type = var.server_type
-  image       = var.image
-  location    = var.location
-  ssh_keys    = [hcloud_ssh_key.deploy.id]
-  user_data   = local.cloud_init
-  labels      = var.labels
-
-  public_net {
-    ipv4_enabled = true
-    ipv6_enabled = true
-  }
+data "hcloud_server" "existing" {
+  name = var.existing_server_name
 }
 
 resource "hcloud_volume" "data" {
   count    = var.enable_data_volume ? 1 : 0
-  name     = "${var.server_name}-data"
+  name     = "${var.existing_server_name}-data"
   size     = var.data_volume_size_gb
   location = var.location
   format   = "ext4"
@@ -82,6 +59,6 @@ resource "hcloud_volume" "data" {
 resource "hcloud_volume_attachment" "data" {
   count     = var.enable_data_volume ? 1 : 0
   volume_id = hcloud_volume.data[0].id
-  server_id = hcloud_server.prod.id
+  server_id = data.hcloud_server.existing.id
   automount = true
 }
