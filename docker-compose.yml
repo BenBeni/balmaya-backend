@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: balmaya_postgres
+    environment:
+      POSTGRES_DB: balmaya
+      POSTGRES_USER: balmaya
+      POSTGRES_PASSWORD: balmaya
+    ports:
+      - "5432:5432"
+    volumes:
+      - balmaya_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: balmaya_redis
+    ports:
+      - "6379:6379"
+
+  mail:
+    image: axllent/mailpit:latest
+    container_name: balmaya_mail
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  keycloak_db:
+    image: postgres:16
+    container_name: balmaya_keycloak_postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    ports:
+      - "5433:5432"
+    volumes:
+      - balmaya_keycloak_pgdata:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: balmaya_keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - keycloak_db
+
+  api:
+    build: .
+    container_name: balmaya_api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/balmaya
+      SPRING_DATASOURCE_USERNAME: balmaya
+      SPRING_DATASOURCE_PASSWORD: balmaya
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/balmaya
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_REDIS_HOST: redis
+      SPRING_MAIL_HOST: mail
+      SPRING_MAIL_PORT: 1025
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: balmaya
+      KEYCLOAK_CLIENT_ID: balmaya-backend
+      KEYCLOAK_CLIENT_SECRET: ""
+      KEYCLOAK_CLIENTAPP_REALM: balmaya
+      KEYCLOAK_CLIENTAPP_CLIENT_ID: balmayaclient
+      KEYCLOAK_CLIENTAPP_CLIENT_SECRET: "cTtGI7Y7pYgTFLedgpylVr77EnuuaIx2"
+      BALMAYA_OTP_TTL_MINUTES: 5
+      BALMAYA_OTP_CLEANUP_INTERVAL_MS: 60000
+      BALMAYA_OTP_RESEND_INTERVAL_SECONDS: 120
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - keycloak
+      - redis
+      - mail
+
+volumes:
+  balmaya_pgdata:
+  balmaya_keycloak_pgdata:

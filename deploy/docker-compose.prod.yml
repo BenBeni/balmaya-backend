@@ -1,0 +1,177 @@
+services:
+  reverse-proxy:
+    image: caddy:2.8-alpine
+    container_name: balmaya_reverse_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - edge
+      - app_net
+    mem_limit: 256m
+    cpus: "0.50"
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  app:
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    container_name: balmaya_app
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_backend:5432/${BACKEND_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${BACKEND_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${BACKEND_DB_PASSWORD}
+      SPRING_REDIS_HOST: redis
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENTAPP_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENTAPP_CLIENT_ID: ${KEYCLOAK_CLIENTAPP_CLIENT_ID}
+      KEYCLOAK_CLIENTAPP_CLIENT_SECRET: ${KEYCLOAK_CLIENTAPP_CLIENT_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
+    depends_on:
+      postgres_backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    # Security: run app as non-root in production.
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - app_net
+      - data_net
+    mem_limit: 1024m
+    cpus: "1.50"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 50s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: balmaya_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - data_net
+    mem_limit: 256m
+    cpus: "0.50"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  postgres_backend:
+    image: postgres:16-alpine
+    container_name: postgres_backend
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${BACKEND_DB_NAME}
+      POSTGRES_USER: ${BACKEND_DB_USER}
+      POSTGRES_PASSWORD: ${BACKEND_DB_PASSWORD}
+    volumes:
+      - postgres_backend_data:/var/lib/postgresql/data
+    networks:
+      - data_net
+    mem_limit: 1024m
+    cpus: "1.00"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BACKEND_DB_USER} -d ${BACKEND_DB_NAME}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  postgres_keycloak:
+    image: postgres:16-alpine
+    container_name: postgres_keycloak
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME}
+      POSTGRES_USER: ${KC_DB_USER}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    networks:
+      - data_net
+    mem_limit: 512m
+    cpus: "0.75"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KC_DB_USER} -d ${KC_DB_NAME}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: balmaya_keycloak
+    restart: unless-stopped
+    command: ["start", "--optimized", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true", "--health-enabled=true"]
+    env_file:
+      - ./.env
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres_keycloak:5432/${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USER}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    depends_on:
+      postgres_keycloak:
+        condition: service_healthy
+    networks:
+      - app_net
+      - data_net
+    mem_limit: 1024m
+    cpus: "1.00"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '200' <&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 80s
+
+volumes:
+  postgres_backend_data:
+  postgres_keycloak_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+    driver: bridge
+  app_net:
+    driver: bridge
+    internal: true
+  data_net:
+    driver: bridge
+    internal: true
+

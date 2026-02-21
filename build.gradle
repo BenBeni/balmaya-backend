@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.9'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.balmaya'
+version = '0.1.0'
+description = 'Sender-only fintech backend (Spring Boot + Keycloak + Postgres + Redis locks)'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'com.stripe:stripe-java:24.11.0'
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'com.sun.mail:jakarta.mail:2.0.1'
+    implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+    implementation 'org.flywaydb:flyway-core:10.17.2'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql:10.17.2'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.27.2'
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+

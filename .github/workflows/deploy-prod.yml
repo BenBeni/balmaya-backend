@@ -1,0 +1,114 @@
+name: build-and-deploy-prod
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/balmaya-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR (build)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tag
+        id: meta
+        run: echo "sha_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ env.IMAGE_NAME }}:latest
+
+      - name: Ensure deployment directories exist
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            install -d -m 0750 /opt/balmaya /opt/balmaya/scripts
+
+      - name: Upload compose and backup scripts
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_PRIVATE_KEY }}
+          source: "deploy/docker-compose.prod.yml,deploy/Caddyfile,deploy/scripts/*"
+          target: "/opt/balmaya"
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_IMAGE: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
+          GHCR_USER: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          BACKEND_DB_PASSWORD: ${{ secrets.BACKEND_DB_PASSWORD }}
+          KC_DB_PASSWORD: ${{ secrets.KC_DB_PASSWORD }}
+          KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+          KEYCLOAK_CLIENTAPP_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENTAPP_CLIENT_SECRET }}
+          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+          APP_HOST: ${{ secrets.APP_HOST }}
+          KEYCLOAK_HOSTNAME: ${{ secrets.KEYCLOAK_HOSTNAME }}
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_PRIVATE_KEY }}
+          script_stop: true
+          envs: APP_IMAGE,GHCR_USER,GHCR_TOKEN,BACKEND_DB_PASSWORD,KC_DB_PASSWORD,KEYCLOAK_ADMIN_PASSWORD,KEYCLOAK_CLIENTAPP_CLIENT_SECRET,KEYCLOAK_CLIENT_SECRET,APP_HOST,KEYCLOAK_HOSTNAME
+          script: |
+            set -euo pipefail
+
+            cp /opt/balmaya/deploy/docker-compose.prod.yml /opt/balmaya/docker-compose.prod.yml
+            cp /opt/balmaya/deploy/Caddyfile /opt/balmaya/Caddyfile
+            cp /opt/balmaya/deploy/scripts/*.sh /opt/balmaya/scripts/
+            chmod 0750 /opt/balmaya/scripts/*.sh
+
+            cat >/opt/balmaya/.env <<EOF
+            APP_IMAGE=${APP_IMAGE}
+            APP_HOST=${APP_HOST}
+            KEYCLOAK_HOSTNAME=${KEYCLOAK_HOSTNAME}
+            BACKEND_DB_NAME=balmaya
+            BACKEND_DB_USER=balmaya_app
+            BACKEND_DB_PASSWORD=${BACKEND_DB_PASSWORD}
+            KC_DB_NAME=keycloak
+            KC_DB_USER=keycloak_app
+            KC_DB_PASSWORD=${KC_DB_PASSWORD}
+            KEYCLOAK_ADMIN_USER=admin
+            KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+            KEYCLOAK_REALM=balmaya
+            KEYCLOAK_CLIENTAPP_CLIENT_ID=balmayaclient
+            KEYCLOAK_CLIENTAPP_CLIENT_SECRET=${KEYCLOAK_CLIENTAPP_CLIENT_SECRET}
+            KEYCLOAK_CLIENT_ID=balmaya
+            KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+            TZ=UTC
+            EOF
+            chmod 0600 /opt/balmaya/.env
+
+            docker login ghcr.io -u "$GHCR_USER" -p "$GHCR_TOKEN"
+            docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env pull
+            docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d
+            /opt/balmaya/scripts/setup_backups_cron.sh

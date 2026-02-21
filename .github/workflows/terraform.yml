@@ -1,0 +1,146 @@
+name: terraform-infra
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to run"
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
+  schedule:
+    # Daily drift detection plan at 03:15 UTC.
+    - cron: "15 3 * * *"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-infra
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_CLI_ARGS_init: "-no-color"
+  TF_CLI_ARGS_plan: "-no-color"
+  TF_CLI_ARGS_apply: "-no-color"
+  WORKING_DIR: infra/terraform
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform format check
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          terraform init \
+            -backend-config="hostname=${{ secrets.TF_BACKEND_HOSTNAME }}" \
+            -backend-config="organization=${{ secrets.TF_BACKEND_ORGANIZATION }}" \
+            -backend-config="workspaces.name=${{ secrets.TF_BACKEND_WORKSPACE }}"
+
+      - name: Terraform validate
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.TF_VAR_SSH_PUBLIC_KEY }}
+          TF_VAR_ssh_key_name: ${{ vars.TF_VAR_SSH_KEY_NAME }}
+          TF_VAR_server_name: ${{ vars.TF_VAR_SERVER_NAME }}
+          TF_VAR_server_type: ${{ vars.TF_VAR_SERVER_TYPE }}
+          TF_VAR_location: ${{ vars.TF_VAR_LOCATION }}
+          TF_VAR_image: ${{ vars.TF_VAR_IMAGE }}
+          TF_VAR_enable_data_volume: ${{ vars.TF_VAR_ENABLE_DATA_VOLUME }}
+          TF_VAR_data_volume_size_gb: ${{ vars.TF_VAR_DATA_VOLUME_SIZE_GB }}
+        run: terraform plan -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.WORKING_DIR }}/tfplan
+          retention-days: 7
+
+      - name: Comment PR with plan status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `Terraform plan completed successfully for \
+            \
+            - Path: \\`infra/terraform\\`
+            - Commit: \\`${context.sha}\\`
+            - Workflow run: ${context.runId}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: output
+            });
+
+  apply:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    # Security: protect this environment with required reviewers.
+    environment: terraform-prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform init
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          terraform init \
+            -backend-config="hostname=${{ secrets.TF_BACKEND_HOSTNAME }}" \
+            -backend-config="organization=${{ secrets.TF_BACKEND_ORGANIZATION }}" \
+            -backend-config="workspaces.name=${{ secrets.TF_BACKEND_WORKSPACE }}"
+
+      - name: Terraform apply
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.TF_VAR_SSH_PUBLIC_KEY }}
+          TF_VAR_ssh_key_name: ${{ vars.TF_VAR_SSH_KEY_NAME }}
+          TF_VAR_server_name: ${{ vars.TF_VAR_SERVER_NAME }}
+          TF_VAR_server_type: ${{ vars.TF_VAR_SERVER_TYPE }}
+          TF_VAR_location: ${{ vars.TF_VAR_LOCATION }}
+          TF_VAR_image: ${{ vars.TF_VAR_IMAGE }}
+          TF_VAR_enable_data_volume: ${{ vars.TF_VAR_ENABLE_DATA_VOLUME }}
+          TF_VAR_data_volume_size_gb: ${{ vars.TF_VAR_DATA_VOLUME_SIZE_GB }}
+        run: terraform apply -auto-approve

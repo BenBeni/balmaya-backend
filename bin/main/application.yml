@@ -1,0 +1,74 @@
+server:
+  port: 8081
+
+spring:
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/balmaya}
+    username: ${SPRING_DATASOURCE_USERNAME:balmaya}
+    password: ${SPRING_DATASOURCE_PASSWORD:balmaya}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8080/realms/balmaya}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+balmaya:
+  currency: EUR
+  fee:
+    service_fee_flat_minor: 150   # 1.50 EUR
+    service_fee_percent_bps: 75   # 0.75%
+  stripe:
+    enabled: ${BALMAYA_STRIPE_ENABLED:false}
+    api_key: ${BALMAYA_STRIPE_API_KEY:}
+    webhook_secret: ${BALMAYA_STRIPE_WEBHOOK_SECRET:}
+  schedule:
+    poll_interval_ms: 60000
+  otp:
+    ttl_minutes: 5
+    cleanup_interval_ms: 60000
+    resend_interval_seconds: 120
+    email:
+      from: ${BALMAYA_OTP_EMAIL_FROM:no-reply@balmaya.local}
+      subject: ${BALMAYA_OTP_EMAIL_SUBJECT:Your verification code}
+
+keycloak:
+  base-url: ${KEYCLOAK_BASE_URL:http://localhost:8080}
+  realm: ${KEYCLOAK_REALM:balmaya}
+  client-app:
+    realm: ${KEYCLOAK_CLIENTAPP_REALM:balmaya}
+    client-id: ${KEYCLOAK_CLIENTAPP_CLIENT_ID:balmayaclient}
+    client-secret: ${KEYCLOAK_CLIENTAPP_CLIENT_SECRET:cTtGI7Y7pYgTFLedgpylVr77EnuuaIx2}
+
+
+logging:
+  level:
+    root: DEBUG
+    org.springframework: WARN
+

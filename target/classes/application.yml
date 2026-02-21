@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/mm}
+    username: ${SPRING_DATASOURCE_USERNAME:mm}
+    password: ${SPRING_DATASOURCE_PASSWORD:mm}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8080/realms/mm}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+mm:
+  currency: EUR
+  fee:
+    service_fee_flat_minor: 150   # 1.50 EUR
+    service_fee_percent_bps: 75   # 0.75%
+  schedule:
+    poll_interval_ms: 60000
