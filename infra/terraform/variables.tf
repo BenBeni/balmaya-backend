@@ -24,7 +24,7 @@ variable "server_name" {
 variable "server_type" {
   description = "Hetzner server type. cx31 gives >= 4GB RAM."
   type        = string
-  default     = "cx31"
+  default     = "cx33"
 }
 
 variable "location" {

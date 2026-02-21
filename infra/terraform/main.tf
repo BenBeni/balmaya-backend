@@ -71,13 +71,12 @@ resource "hcloud_server" "prod" {
 }
 
 resource "hcloud_volume" "data" {
-  count     = var.enable_data_volume ? 1 : 0
-  name      = "${var.server_name}-data"
-  size      = var.data_volume_size_gb
-  location  = var.location
-  format    = "ext4"
-  automount = true
-  labels    = var.labels
+  count    = var.enable_data_volume ? 1 : 0
+  name     = "${var.server_name}-data"
+  size     = var.data_volume_size_gb
+  location = var.location
+  format   = "ext4"
+  labels   = var.labels
 }
 
 resource "hcloud_volume_attachment" "data" {

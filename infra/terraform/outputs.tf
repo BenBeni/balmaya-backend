@@ -9,6 +9,6 @@ output "server_ipv6" {
 }
 
 output "ssh_user" {
-  value       = "root"
+  value       = "app"
   description = "Initial SSH user for first bootstrap"
 }

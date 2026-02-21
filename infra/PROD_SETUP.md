@@ -23,10 +23,12 @@ This directory layout is production-focused and intentionally strict:
 
 - `HCLOUD_TOKEN`
 - `TF_VAR_SSH_PUBLIC_KEY`
-- `TF_API_TOKEN` (Terraform Cloud/Enterprise token)
-- `TF_BACKEND_HOSTNAME` (usually `app.terraform.io`)
-- `TF_BACKEND_ORGANIZATION`
-- `TF_BACKEND_WORKSPACE`
+- `TF_STATE_BUCKET`
+- `TF_STATE_KEY` (e.g. `balmaya/prod/terraform.tfstate`)
+- `TF_STATE_REGION` (e.g. `eu-central`)
+- `TF_STATE_ENDPOINT` (S3 endpoint, e.g. Hetzner Object Storage)
+- `TF_STATE_ACCESS_KEY_ID`
+- `TF_STATE_SECRET_ACCESS_KEY`
 
 ## Recommended GitHub Variables (Terraform Workflow)
 

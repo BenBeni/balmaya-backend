@@ -3,6 +3,8 @@
 **/target/
 **/bin/
 **/.gradle/
+**/.terraform/
+**/terraform/tfout
 
 # Logs and temp files
 *.log
