@@ -133,7 +133,7 @@ services:
     image: quay.io/keycloak/keycloak:25.0
     container_name: balmaya_keycloak
     restart: unless-stopped
-    command: ["start", "--optimized", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true", "--health-enabled=true"]
+    command: ["start", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
     env_file:
       - ./.env
     environment:
@@ -143,6 +143,7 @@ services:
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
     depends_on:
       postgres_keycloak:
         condition: service_healthy
@@ -174,5 +175,7 @@ networks:
   data_net:
     driver: bridge
     internal: true
+
+
 
 
