@@ -117,5 +117,5 @@ jobs:
 
             docker login ghcr.io -u "$GHCR_USER" -p "$GHCR_TOKEN"
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env pull
-            docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d
+            docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d --force-recreate --remove-orphans
             /opt/balmaya/scripts/setup_backups_cron.sh
