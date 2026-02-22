@@ -157,6 +157,7 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_RELATIVE_PATH: /keycloak
     depends_on:
       postgres_keycloak:
         condition: service_healthy
