@@ -1,5 +1,19 @@
 # syntax=docker/dockerfile:1.7
 
+# Build stage
+FROM gradle:8.7.0-jdk21 AS builder
+WORKDIR /workspace
+
+COPY build.gradle settings.gradle gradlew gradlew.bat ./
+COPY gradle ./gradle
+COPY src ./src
+
+RUN chmod +x gradlew && ./gradlew --no-daemon clean bootJar
+RUN JAR_PATH="$(ls build/libs/*.jar | grep -v -- '-plain\.jar' | head -n1)" \
+    && test -n "$JAR_PATH" \
+    && cp "$JAR_PATH" /workspace/app.jar
+
+# Runtime stage
 FROM eclipse-temurin:21-jre-jammy
 
 # Install minimal runtime tools needed by health checks and diagnostics.
@@ -11,8 +25,7 @@ RUN apt-get update \
 RUN groupadd --system app && useradd --system --gid app --create-home --home-dir /home/app app
 
 WORKDIR /app
-ARG JAR_FILE=build/libs/balmaya-0.1.0.jar
-COPY ${JAR_FILE} app.jar
+COPY --from=builder /workspace/app.jar /app/app.jar
 RUN chown -R app:app /app
 
 USER app
