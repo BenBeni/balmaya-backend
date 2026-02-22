@@ -8,16 +8,17 @@ on:
 env:
   IMAGE_NAME: ghcr.io/benbeni/balmaya-backend
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+jobs:`r`n  deploy:`r`n    environment: production`r`n    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Validate required deploy secrets
+        run: |
+          [ -n "${{ secrets.HETZNER_HOST }}" ] || (echo "Missing HETZNER_HOST" && exit 1)
+          [ -n "${{ secrets.HETZNER_SSH_USER }}" ] || (echo "Missing HETZNER_SSH_USER" && exit 1)
+          [ -n "${{ secrets.HETZNER_SSH_PRIVATE_KEY }}" ] || (echo "Missing HETZNER_SSH_PRIVATE_KEY" && exit 1)
 
       - name: Log in to GHCR (build)
         uses: docker/login-action@v3
@@ -112,3 +113,4 @@ jobs:
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env pull
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d
             /opt/balmaya/scripts/setup_backups_cron.sh
+
