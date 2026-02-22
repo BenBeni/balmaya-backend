@@ -8,12 +8,18 @@ on:
 env:
   IMAGE_NAME: ghcr.io/benbeni/balmaya-backend
 
-jobs:`r`n  deploy:`r`n    environment: production`r`n    runs-on: ubuntu-latest
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Validate required deploy secrets
         run: |
           [ -n "${{ secrets.HETZNER_HOST }}" ] || (echo "Missing HETZNER_HOST" && exit 1)
@@ -113,4 +119,3 @@ jobs:`r`n  deploy:`r`n    environment: production`r`n    runs-on: ubuntu-latest
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env pull
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d
             /opt/balmaya/scripts/setup_backups_cron.sh
-
