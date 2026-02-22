@@ -144,7 +144,7 @@ services:
     image: quay.io/keycloak/keycloak:25.0
     container_name: balmaya_keycloak
     restart: unless-stopped
-    command: ["start", "--hostname-strict=false", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
+    command: ["start", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
     env_file:
       - ./.env
     environment:
@@ -155,6 +155,8 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
     depends_on:
       postgres_keycloak:
         condition: service_healthy
