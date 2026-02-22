@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class EmailOtpService {
   private static final SecureRandom RNG = new SecureRandom();
+  private static final String TEST_OTP_CODE = "123456";
 
   private final EmailOtpRepository otps;
   private final EmailOtpSender sender;
@@ -27,20 +28,23 @@ public class EmailOtpService {
   @Value("${balmaya.otp.resend_interval_seconds:120}")
   private long resendIntervalSeconds;
 
+  @Value("${balmaya.otp.test_mode:false}")
+  private boolean otpTestMode;
+
   public EmailOtp generate(String email, String userId, String language) {
     String lang = normalizeLanguage(language);
-    String code = String.format("%06d", RNG.nextInt(1_000_000));
     OffsetDateTime now = OffsetDateTime.now();
     EmailOtp otp = EmailOtp.builder()
       .id(UUID.randomUUID())
       .email(email)
       .userId(userId)
-      .code(code)
+      .code(nextOtpCode())
       .expiresAt(now.plusMinutes(ttlMinutes))
       .lastSentAt(now)
       .build();
+
     EmailOtp saved = otps.save(otp);
-    sender.send(saved, lang);
+    sendIfEnabled(saved, lang);
     return saved;
   }
 
@@ -58,9 +62,13 @@ public class EmailOtpService {
       throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "OTP resend too soon");
     }
 
+    if (otpTestMode) {
+      latest.setCode(TEST_OTP_CODE);
+    }
     latest.setLastSentAt(now);
+
     EmailOtp saved = otps.save(latest);
-    sender.send(saved, lang);
+    sendIfEnabled(saved, lang);
     return saved;
   }
 
@@ -72,6 +80,20 @@ public class EmailOtpService {
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP"));
     otp.setUsedAt(now);
     otps.save(otp);
+  }
+
+  private String nextOtpCode() {
+    if (otpTestMode) {
+      return TEST_OTP_CODE;
+    }
+    return String.format("%06d", RNG.nextInt(1_000_000));
+  }
+
+  private void sendIfEnabled(EmailOtp otp, String language) {
+    if (otpTestMode) {
+      return;
+    }
+    sender.send(otp, language);
   }
 
   private String normalizeLanguage(String language) {
@@ -90,4 +112,3 @@ public class EmailOtpService {
     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported language. Use english or french");
   }
 }
-

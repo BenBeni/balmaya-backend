@@ -58,6 +58,7 @@ balmaya:
     ttl_minutes: 5
     cleanup_interval_ms: 60000
     resend_interval_seconds: 120
+    test_mode: ${BALMAYA_OTP_TEST_MODE:false}
     email:
       from: ${BALMAYA_OTP_EMAIL_FROM:no-reply@balmaya.local}
       subject: ${BALMAYA_OTP_EMAIL_SUBJECT:Your verification code}
@@ -75,5 +76,4 @@ logging:
   level:
     root: DEBUG
     org.springframework: WARN
-
 

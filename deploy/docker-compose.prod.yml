@@ -46,6 +46,8 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
+      BALMAYA_OTP_TEST_MODE: "true"
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
     depends_on:
       postgres_backend:
         condition: service_healthy
@@ -176,9 +178,4 @@ networks:
   data_net:
     driver: bridge
     internal: true
-
-
-
-
-
 
