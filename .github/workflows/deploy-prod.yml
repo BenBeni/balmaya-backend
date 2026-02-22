@@ -5,9 +5,6 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/balmaya-backend
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,9 +23,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set image tag
+      - name: Set image metadata
         id: meta
-        run: echo "sha_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          echo "image_name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/balmaya-backend" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -37,8 +37,8 @@ jobs:
           file: ./Dockerfile.prod
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ steps.meta.outputs.image_name }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ steps.meta.outputs.image_name }}:latest
 
       - name: Ensure deployment directories exist
         uses: appleboy/ssh-action@v1.2.0
@@ -63,7 +63,7 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
-          APP_IMAGE: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
+          APP_IMAGE: ${{ steps.meta.outputs.image_name }}:${{ steps.meta.outputs.sha_tag }}
           GHCR_USER: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           BACKEND_DB_PASSWORD: ${{ secrets.BACKEND_DB_PASSWORD }}
