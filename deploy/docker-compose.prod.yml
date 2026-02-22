@@ -73,6 +73,8 @@ services:
       start_period: 50s
 
   redis:
+    ports:
+      - "6379:6379"
     image: redis:7.2-alpine
     container_name: balmaya_redis
     restart: unless-stopped
@@ -91,6 +93,8 @@ services:
       start_period: 15s
 
   postgres_backend:
+    ports:
+      - "5432:5432"
     image: postgres:16-alpine
     container_name: postgres_backend
     restart: unless-stopped
@@ -112,6 +116,8 @@ services:
       start_period: 20s
 
   postgres_keycloak:
+    ports:
+      - "5433:5432"
     image: postgres:16-alpine
     container_name: postgres_keycloak
     restart: unless-stopped
@@ -133,6 +139,8 @@ services:
       start_period: 20s
 
   keycloak:
+    ports:
+      - "8080:8080"
     image: quay.io/keycloak/keycloak:25.0
     container_name: balmaya_keycloak
     restart: unless-stopped
