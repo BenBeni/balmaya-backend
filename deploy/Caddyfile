@@ -1,7 +1,7 @@
 http://89.167.95.134 {
     encode zstd gzip
 
-    handle /keycloak* {
+    handle_path /keycloak* {
         reverse_proxy keycloak:8080
     }
 
