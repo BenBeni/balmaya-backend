@@ -1,10 +1,8 @@
 {
-    auto_https off
+    local_certs
 }
 
-:443 {
-
-    tls internal
+89.167.95.134 {
 
     encode zstd gzip
 
