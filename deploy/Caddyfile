@@ -1,4 +1,4 @@
-https://89.167.95.134 {
+http://89.167.95.134 {
     encode zstd gzip
     reverse_proxy app:8081
 }
