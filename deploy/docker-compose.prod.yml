@@ -45,7 +45,7 @@ services:
       KEYCLOAK_CLIENTAPP_CLIENT_SECRET: ${KEYCLOAK_CLIENTAPP_CLIENT_SECRET}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/keycloak/realms/${KEYCLOAK_REALM}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
       BALMAYA_OTP_TEST_MODE: "true"
       MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
       LOG_FILE: /opt/balmaya/logs/app/application.log
@@ -162,7 +162,6 @@ services:
       KC_HTTP_MANAGEMENT_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_HTTP_RELATIVE_PATH: /keycloak
       KC_HTTP_ENABLED: true
     depends_on:
       postgres_keycloak:
