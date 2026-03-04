@@ -1,9 +1,10 @@
 {
+    # This allows Caddy to create its own CA for local use
     local_certs
 }
 
-89.167.95.134 {
-
+# Use http:// to bypass the SSL protocol error while testing with a raw IP
+http://89.167.95.134 {
     encode zstd gzip
 
     handle /keycloak* {
