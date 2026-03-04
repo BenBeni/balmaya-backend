@@ -4,6 +4,9 @@ http://89.167.95.134 {
 
     handle /keycloak* {
         reverse_proxy keycloak:8080
+        header_up X-Forwarded-Proto http
+        header_up X-Forwarded-Host {host}
+        header_up X-Forwarded-For {remote}
     }
 
     handle {
