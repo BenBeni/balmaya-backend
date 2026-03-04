@@ -2,11 +2,13 @@
     local_certs
 }
 
-89.167.95.134 {
+:80 {
     encode zstd gzip
     reverse_proxy app:8081
+}
 
-    servers {
-        protocols h1 h2
-    }
+:443 {
+    tls internal
+    encode zstd gzip
+    reverse_proxy app:8081
 }
