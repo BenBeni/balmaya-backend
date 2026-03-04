@@ -1,4 +1,12 @@
 http://89.167.95.134 {
+
     encode zstd gzip
-    reverse_proxy app:8081
+
+    handle /keycloak* {
+        reverse_proxy keycloak:8080
+    }
+
+    handle {
+        reverse_proxy app:8081
+    }
 }
