@@ -1,4 +1,8 @@
-http://89.167.95.134 {
+{
+    local_certs
+}
+
+89.167.95.134 {
 
     encode zstd gzip
 
