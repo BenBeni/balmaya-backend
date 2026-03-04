@@ -1,14 +1,4 @@
-{
-    local_certs
-}
-
-:80 {
-    encode zstd gzip
-    reverse_proxy app:8081
-}
-
-:443 {
-    tls internal
+https://89.167.95.134 {
     encode zstd gzip
     reverse_proxy app:8081
 }
