@@ -172,7 +172,7 @@ services:
     mem_limit: 1024m
     cpus: "1.00"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/health/ready >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/9000'"]
       interval: 30s
       timeout: 10s
       retries: 8
