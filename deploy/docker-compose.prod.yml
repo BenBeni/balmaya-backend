@@ -147,7 +147,7 @@ services:
     image: quay.io/keycloak/keycloak:25.0
     container_name: balmaya_keycloak
     restart: unless-stopped
-    command: ["start", "--hostname=${KEYCLOAK_HOSTNAME}", "--optimized"]
+    command: ["start", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
     env_file:
       - ./.env
     environment:
@@ -165,6 +165,7 @@ services:
       KC_HTTP_ENABLED: true
       KC_HTTP_RELATIVE_PATH: /keycloak
       KC_PROXY: edge
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
     depends_on:
       postgres_keycloak:
         condition: service_healthy
