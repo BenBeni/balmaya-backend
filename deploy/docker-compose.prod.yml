@@ -147,7 +147,7 @@ services:
     image: quay.io/keycloak/keycloak:25.0
     container_name: balmaya_keycloak
     restart: unless-stopped
-    command: ["start-dev", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
+    command: ["start", "--hostname=${KEYCLOAK_HOSTNAME}", "--proxy-headers=xforwarded", "--http-enabled=true"]
     env_file:
       - ./.env
     environment:

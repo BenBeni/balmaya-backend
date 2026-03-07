@@ -120,5 +120,16 @@ jobs:
             docker login ghcr.io -u "$GHCR_USER" -p "$GHCR_TOKEN"
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env pull
             docker compose -f /opt/balmaya/docker-compose.prod.yml --env-file /opt/balmaya/.env up -d --force-recreate --remove-orphans
+
+            # Ensure Keycloak DB is ready before forcing HTTP SSL policy in test setup.
+            for i in $(seq 1 30); do
+              if docker exec postgres_keycloak pg_isready -U keycloak_app -d keycloak >/dev/null 2>&1; then
+                break
+              fi
+              sleep 2
+            done
+
+            docker exec postgres_keycloak psql -v ON_ERROR_STOP=1 -U keycloak_app -d keycloak -c "update realm set ssl_required='NONE' where name in ('master','balmaya');"
+
             /opt/balmaya/scripts/setup_backups_cron.sh
 
